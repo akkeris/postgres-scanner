@@ -17,9 +17,10 @@ func main() {
         if err != nil {
            fmt.Println(err)
         }
+fmt.Println(appspacelist)
 	for index, element := range appspacelist {
-                location, name := getPostgresLocation(index)
-		sendPostgresStats(location, name, element)
+                location, name := getPostgresLocation(element)
+		sendPostgresStats(location, name, index)
 	}
         fmt.Println("Done with run")
 }
@@ -116,7 +117,7 @@ func getAppSpaceList() (l map[string]string, e error) {
                 fmt.Println(dberr)
                 return nil, dberr
         }
-        stmt,dberr := db.Prepare("select appname, space, bindname  from appbindings where bindtype='akkeris-postgresql'")
+        stmt,dberr := db.Prepare("select apps.name as appname, spaces.name as space, service_attachments.service as bindname from apps, spaces, services, service_attachments where services.service=service_attachments.service and owned=true and addon_name='akkeris-postgresql' and services.deleted=false and service_attachments.deleted=false and service_attachments.app=apps.app and spaces.space=apps.space;")
         defer stmt.Close()
         rows, err := stmt.Query()
         if dberr != nil {
@@ -134,7 +135,7 @@ func getAppSpaceList() (l map[string]string, e error) {
                         fmt.Println(err)
                         return nil, err
                 }
-                list[bindname]=appname+"-"+space  
+                list[appname+"-"+space]=bindname
         }
         err = rows.Err()
         if err != nil {
