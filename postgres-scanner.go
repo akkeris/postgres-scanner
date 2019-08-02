@@ -117,7 +117,23 @@ func getAppSpaceList() (l map[string]string, e error) {
                 fmt.Println(dberr)
                 return nil, dberr
         }
-        stmt,dberr := db.Prepare("select apps.name as appname, spaces.name as space, service_attachments.service as bindname from apps, spaces, services, service_attachments where services.service=service_attachments.service and owned=true and addon_name='akkeris-postgresql' and services.deleted=false and service_attachments.deleted=false and service_attachments.app=apps.app and spaces.space=apps.space;")
+        stmt,dberr := db.Prepare(fmt.Sprintf(`
+select apps.name as appname, 
+       spaces.name as space, 
+       service_attachments.service as bindname
+  from apps, spaces, services, service_attachments, stacks
+ where services.service=service_attachments.service 
+   and owned=true and addon_name='akkeris-postgresql' 
+   and services.deleted=false 
+   and service_attachments.deleted=false
+   and apps.deleted=false
+   and spaces.deleted=false
+   and service_attachments.app=apps.app 
+   and spaces.space=apps.space
+   and spaces.stack=stacks.stack
+   and stacks.name='%s'
+`,os.Getenv("STACK")))
+
         defer stmt.Close()
         rows, err := stmt.Query()
         if dberr != nil {
